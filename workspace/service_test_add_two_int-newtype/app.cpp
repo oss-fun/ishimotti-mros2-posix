@@ -1,5 +1,6 @@
 #include "mros2.h"
 #include "std_msgs/msg/string.hpp"
+#include "std_msgs/msg/int64.hpp"
 
 #include "cmsis_os.h"
 #include "netif.h"
@@ -10,9 +11,10 @@
 // #include "service_msgs/msg/add_two_ints_client.hpp"
 #include "/home/oss-wasm/Documents/test-mros/vm_share/mros2-posix/workspace/custom_msgs/service_msgs/msg/add_two_int_client.hpp"
 
-void userCallback(service_msgs::msg::add_two_int_client *msg)
+void userCallback(std_msgs::msg::Int64 *msg)
 {
   // printf("subscribed msg: '%s'\r\n", msg->data.c_str());
+  printf("subscribed msg: calculation sum:'%s'\r\n", msg->data);
 }
 
 int main(int argc, char *argv[])
@@ -30,7 +32,7 @@ int main(int argc, char *argv[])
   // mros2::Publisher pub = node.create_publisher<std_msgs::msg::String>("to_linux", 10);
   mros2::Publisher pub = node.create_service_publisher<service_msgs::msg::add_two_int_client>("add_two_intsRequest", 10); //
   // mros2::Publisher pub = node.create_service_publisher<std_msgs::msg::String>("calculator_service", 10); // request_topic_ : CalculatorRequestType servicename:calculator_service
-  mros2::Subscriber sub = node.create_service_subscription<service_msgs::msg::add_two_int_client>("add_two_intsReply", 10, userCallback); // for add_two_ints
+  mros2::Subscriber sub = node.create_service_subscription<std_msgs::msg::Int64>("add_two_intsReply", 10, userCallback); // for add_two_ints
   // mros2::Subscriber sub = node.create_subscription<std_msgs::msg::String>("to_stm", 10, userCallback);
 
   osDelay(100);
