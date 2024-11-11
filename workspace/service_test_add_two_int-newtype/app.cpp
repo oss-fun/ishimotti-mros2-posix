@@ -10,11 +10,23 @@
 #include <string.h>
 // #include "service_msgs/msg/add_two_ints_client.hpp"
 #include "/home/oss-wasm/Documents/test-mros/vm_share/mros2-posix/workspace/custom_msgs/service_msgs/msg/add_two_int_client.hpp"
+#include <condition_variable>
+// intptr_t *msg_buffer;
+// uint8_t *cacheChange_buffer;
 
 void userCallback(std_msgs::msg::Int64 *msg)
 {
   // printf("subscribed msg: '%s'\r\n", msg->data.c_str());
-  printf("subscribed msg: calculation sum:'%s'\r\n", msg->data);
+  // printf("subscribed msg: calculation sum:'%ld'\r\n", msg->data);
+  // std_msgs::msg::Int64 *msg_test = reinterpret_cast<std_msgs::msg::Int64 *>(&msg_buffer);
+
+  // std_msgs::msg::Int64 msg_test;
+
+  // cacheChange_bufferに入っているポインター表示
+  // printf("cacheChange_buffer: %p\r\n", cacheChange_buffer);
+
+  // msg_test.copyFromBuf(&cacheChange_buffer[4]);
+  // printf("subscribed msg_test: calculation sum:'%ld'\r\n", msg_test.data);
 }
 
 int main(int argc, char *argv[])
@@ -29,16 +41,20 @@ int main(int argc, char *argv[])
   MROS2_DEBUG("mROS 2 initialization is completed\r\n");
 
   mros2::Node node = mros2::Node::create_node("mros2_node");
-  // mros2::Publisher pub = node.create_publisher<std_msgs::msg::String>("to_linux", 10);
-  mros2::Publisher pub = node.create_service_publisher<service_msgs::msg::add_two_int_client>("add_two_intsRequest", 10); //
-  // mros2::Publisher pub = node.create_service_publisher<std_msgs::msg::String>("calculator_service", 10); // request_topic_ : CalculatorRequestType servicename:calculator_service
-  mros2::Subscriber sub = node.create_service_subscription<std_msgs::msg::Int64>("add_two_intsReply", 10, userCallback); // for add_two_ints
-  // mros2::Subscriber sub = node.create_subscription<std_msgs::msg::String>("to_stm", 10, userCallback);
+
+  std::string client_rq_type = "example_interfaces::srv::dds_::AddTwoInts_Request_";
+  std::string client_rr_type = "example_interfaces::srv::dds_::AddTwoInts_Response_";
+
+  mros2::Publisher pub = node.create_client_publisher<service_msgs::msg::add_two_int_client>("add_two_ints", 10, client_rq_type);  //
+  mros2::Subscriber sub = node.create_client_subscription<std_msgs::msg::Int64>("add_two_ints", 10, userCallback, client_rr_type); // for add_two_ints
+
+  // pub.sub
+  //  mros2::Publisher pub = node.create_publisher<std_msgs::msg::String>("to_linux", 10);
+  //  mros2::Subscriber sub = node.create_subscription<std_msgs::msg::String>("to_stm", 10, userCallback);
 
   osDelay(100);
   MROS2_INFO("ready to pub/sub message\r\n");
 
-  auto count = 0;
   while (1)
   {
     auto msg = service_msgs::msg::add_two_int_client();
@@ -46,11 +62,19 @@ int main(int argc, char *argv[])
     msg.b = 3;
 
     printf("publishing msg: '%d' + '%d'\r\n", msg.a, msg.b);
-    // auto msg = std_msgs::msg::String();
-    // msg.data = "Hello from mros2-posix onto Linux: " + std::to_string(count++);
-    // printf("publishing msg: '%s'\r\n", msg.data.c_str());
-    pub.publish(msg);
-    osDelay(1000);
+    // MROS2_INFO("publishing msg: '%d' + '%d'\r\n", msg.a, msg.b);
+
+    auto response = pub.publish(msg);
+    // osDelay(1000);
+
+    printf("future.get() start\r\n");
+    mros2::spin_until_future_complete(node, &response);
+
+    printf("future.get() return\r\n");
+    std_msgs::msg::Int64 msg_test;
+    // uint8_t *result = response.get();
+    msg_test.copyFromBuf(&response.get()[4]);
+    printf("future subscribed msg_test: calculation sum:'%ld'\r\n", msg_test.data);
   }
 
   mros2::spin();

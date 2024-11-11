@@ -4,3 +4,4 @@ add_cmake_build
 echoback_string_cmake_build
 service_callback-debug_cmake_build
 cmake_build-add_two_intnewtype
+cmake_build-server-server-before-buffer
