@@ -51,36 +51,76 @@ int main(int argc, char *argv[])
 
   mros2::Node node = mros2::Node::create_node("mros2_node");
 
-  mros2::Publisher client = node.create_client<service_msgs::msg::add_two_int_client>("add_two_ints", 10);
-  // mros2::Publisher pub = node.create_publisher<std_msgs::msg::Int64>("add_two_ints", 10);
-  mros2::wait_service(1); // ertps内で照合をmrosgawani
+  mros2::Publisher client = node.create_client<service_msgs::msg::add_two_int_client>("add_two_ints", 10); //
 
-  osDelay(100);
+  mros2::wait_service(1);
+  // osDelay(100);
 
   MROS2_INFO("ready to pub/sub message\r\n");
 
-  // 計測前に10000回ループ
-  for (int i = 0; i < 3; i++)
+  auto start_time1 = std::chrono::high_resolution_clock::now();
+  // while (1)
+  // {
+  auto msg = service_msgs::msg::add_two_int_client();
+  msg.a = 3;
+  msg.b = 3;
+
+  printf("publishing msg: '%d' + '%d'\r\n", msg.a, msg.b);
+
+  // // 計測前に100回ループ
+  // for (int i = 0; i < 100; i++)
+  // {
+  //   auto response1 = client.async_send_request(msg);
+  //   mros2::spin_until_future_complete(node, &response1);
+  // }
+
+  // ファイルに書き込み
+  std::ofstream output_file("benchmark_results.txt", std::ios::app);
+  output_file.is_open();
+  output_file << "[mros-eRTPS]start\n";
+
+  for (int i = 0; i < 20; i++)
   {
-    auto msg = service_msgs::msg::add_two_int_client();
-    msg.a = 3;
-    msg.b = 3;
 
-    printf("publishing msg: '%d' + '%d'\r\n", msg.a, msg.b);
+    // 計測開始
+    auto start_time = std::chrono::high_resolution_clock::now();
 
-    // pub.publish(msg);
     auto response = client.async_send_request(msg);
     // osDelay(1000);
-
     printf("future.get() start\r\n");
     mros2::spin_until_future_complete(node, &response);
-    printf("future.get() return\r\n");
 
+    // 計測終了
+    auto end_time = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
+
+    // 10回ごとにファイルに書き込み
+    if (i % 1 == 0)
+    {
+      output_file << "Execution Time: " << duration << " microseconds"
+                  << "[" << i << "]\n";
+    }
+
+    // if (output_file.is_open())
+    // {
+    //   output_file << "Execution Time: " << duration << " microseconds\n";
+    //   output_file.close();
+    // }
+    // else
+    // {
+    //   printf("Failed to open file\n");
+    // }
+
+    printf("future.get() return\r\n");
     std_msgs::msg::Int64 msg_test;
     msg_test.copyFromBuf(&response.get()[4]);
     printf("future subscribed msg_test: calculation sum:'%ld'\r\n", msg_test.data);
-    // break;
   }
+  output_file << "end\n";
+  output_file.close();
+
+  // break;
+  // }
 
   // mros2::spin();
   return 0;

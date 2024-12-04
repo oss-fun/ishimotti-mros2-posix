@@ -62,7 +62,8 @@ namespace rtps
         const uint8_t MAX_NUM_READER_CALLBACKS = 5;
 
         const uint8_t HISTORY_SIZE_STATELESS = 2;
-        const uint8_t HISTORY_SIZE_STATEFUL = 10;
+        // const uint8_t HISTORY_SIZE_STATEFUL = 10;
+        const uint8_t HISTORY_SIZE_STATEFUL = 2;
 
         // const uint8_t MAX_TYPENAME_LENGTH = 40;
         const uint8_t MAX_TYPENAME_LENGTH = 80;

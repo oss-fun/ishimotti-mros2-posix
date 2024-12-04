@@ -13,8 +13,8 @@
 #include "/home/oss-wasm/Documents/test-mros/vm_share/mros2-posix/workspace/custom_msgs/service_msgs/msg/add_two_int_request.hpp"
 
 // スレッドセーフなキューまたはマップを使用
-std::mutex bufferMutex;
-std::queue<CacheChangeInfo> cacheChangeQueue;
+// std::mutex bufferMutex;
+// std::queue<CacheChangeInfo> cacheChangeQueue;
 
 mros2::Publisher pub_callback;
 void userCallback(service_msgs::msg::add_two_int_request *msg)

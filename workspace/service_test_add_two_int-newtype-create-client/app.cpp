@@ -16,13 +16,6 @@
 // intptr_t *msg_buffer;
 // uint8_t *cacheChange_buffer;
 
-// for benchmark
-#include <chrono>
-#include <fstream>
-#include <cstdlib>
-#include <memory>
-using namespace std::chrono_literals; // for benchmark
-
 void userCallback(std_msgs::msg::Int64 *msg)
 {
   // printf("subscribed msg: '%s'\r\n", msg->data.c_str());
@@ -51,16 +44,15 @@ int main(int argc, char *argv[])
 
   mros2::Node node = mros2::Node::create_node("mros2_node");
 
-  mros2::Publisher client = node.create_client<service_msgs::msg::add_two_int_client>("add_two_ints", 10);
-  // mros2::Publisher pub = node.create_publisher<std_msgs::msg::Int64>("add_two_ints", 10);
-  mros2::wait_service(1); // ertps内で照合をmrosgawani
+  mros2::Publisher pub = node.create_client<service_msgs::msg::add_two_int_client>("add_two_ints", 10); //
 
-  osDelay(100);
+  mros2::wait_service(1);
+  // osDelay(100);
 
   MROS2_INFO("ready to pub/sub message\r\n");
 
-  // 計測前に10000回ループ
-  for (int i = 0; i < 3; i++)
+  auto start_time = std::chrono::high_resolution_clock::now();
+  while (1)
   {
     auto msg = service_msgs::msg::add_two_int_client();
     msg.a = 3;
@@ -68,21 +60,20 @@ int main(int argc, char *argv[])
 
     printf("publishing msg: '%d' + '%d'\r\n", msg.a, msg.b);
 
-    // pub.publish(msg);
-    auto response = client.async_send_request(msg);
+    auto response = pub.async_send_request(msg);
     // osDelay(1000);
 
     printf("future.get() start\r\n");
     mros2::spin_until_future_complete(node, &response);
-    printf("future.get() return\r\n");
 
+    printf("future.get() return\r\n");
     std_msgs::msg::Int64 msg_test;
     msg_test.copyFromBuf(&response.get()[4]);
     printf("future subscribed msg_test: calculation sum:'%ld'\r\n", msg_test.data);
-    // break;
+    break;
   }
 
-  // mros2::spin();
+  mros2::spin();
   return 0;
 }
 
