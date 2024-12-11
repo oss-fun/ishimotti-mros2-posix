@@ -30,7 +30,7 @@
 //   pub_callback.publish(response);
 // }
 
-// mros2::Publisher pub_callback;
+mros2::Publisher pub_callback;
 void service_userCallback(service_msgs::msg::add_two_int_client *msg, std_msgs::msg::Int64 *response)
 {
   // printf("subscribed msg: '%s'\r\n", msg->data.c_str());
@@ -46,11 +46,6 @@ void service_userCallback(service_msgs::msg::add_two_int_client *msg, std_msgs::
   // pub_callback.publish(response_debug);
 }
 
-void userCallback(std_msgs::msg::String *msg)
-{
-  printf("subscribed msg: '%s'\r\n", msg->data.c_str());
-}
-
 int main(int argc, char *argv[])
 {
   netif_posix_add(NETIF_IPADDR, NETIF_NETMASK);
@@ -64,34 +59,27 @@ int main(int argc, char *argv[])
 
   mros2::Node node = mros2::Node::create_node("mros2_node");
 
-  // 複数topicテスト
-  mros2::Publisher pub = node.create_publisher<std_msgs::msg::String>("to_linux", 10);
-  mros2::Subscriber sub = node.create_subscription<std_msgs::msg::String>("to_stm", 10, userCallback);
-
   // add_two_intsRequestで動く形で、Subscribe実装　topic名　add_two_intsRequest
-  mros2::Subscriber service = node.create_service<service_msgs::msg::add_two_int_client, std_msgs::msg::Int64>("add_two_ints", 10, service_userCallback);
+  mros2::Subscriber sub = node.create_service_server_subscription<service_msgs::msg::add_two_int_client, std_msgs::msg::Int64>("add_two_intsRequest", 10, service_userCallback);
 
-  // mros2::Publisher pub = node.create_publisher<std_msgs::msg::String>("to_linux", 10);
-  // mros2::Subscriber sub = node.create_subscription<std_msgs::msg::String>("to_stm", 10, userCallback);
-
-  // // add_two_intsRequestで動く形で、Subscribe実装　topic名　add_two_intsRequest
-  // mros2::Subscriber sub = node.create_service_server_subscription<service_msgs::msg::add_two_int_client, std_msgs::msg::Int64>("add_two_intsRequest", 10, service_userCallback);
-
-  // // add_two_intsReplyで動く形で、Publish実装　topic名　add_two_intsReply
-  // mros2::Publisher pub = node.create_service_server_publisher<std_msgs::msg::Int64>("add_two_intsReply", 10);
-  // pub_callback = pub;
+  // add_two_intsReplyで動く形で、Publish実装　topic名　add_two_intsReply
+  mros2::Publisher pub = node.create_service_server_publisher<std_msgs::msg::Int64>("add_two_intsReply", 10);
+  pub_callback = pub;
 
   osDelay(100);
   MROS2_INFO("ready to pub/sub message\r\n");
 
   auto count = 0;
-  // 10回送信
-  while (count < 10)
+  while (1)
   {
-    auto msg = std_msgs::msg::String();
-    msg.data = "Hello from mros2-posix onto Linux: " + std::to_string(count++);
-    printf("publishing msg: '%s'\r\n", msg.data.c_str());
-    pub.publish(msg);
+    // auto msg = service_msgs::msg::Int64();
+    // msg.data = count++;
+
+    // printf("publishing msg: '%d' + '%d'\r\n", msg.a, msg.b);
+    // auto msg = std_msgs::msg::String();
+    // msg.data = "Hello from mros2-posix onto Linux: " + std::to_string(count++);
+    // printf("publishing msg: '%s'\r\n", msg.data.c_str());
+    // pub.publish(msg);
     osDelay(1000);
   }
 
