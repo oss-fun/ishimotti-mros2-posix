@@ -10,6 +10,7 @@
 
 void userCallback(std_msgs::msg::String *msg)
 {
+  printf("subscribed msg\n");
   printf("subscribed msg: '%s'\r\n", msg->data.c_str());
 }
 
@@ -31,15 +32,15 @@ int main(int argc, char *argv[])
   osDelay(100);
   MROS2_INFO("ready to pub/sub message\r\n");
 
-  auto count = 0;
-  while (1)
-  {
-    auto msg = std_msgs::msg::String();
-    msg.data = "Hello from mros2-posix onto Linux: " + std::to_string(count++);
-    printf("publishing msg: '%s'\r\n", msg.data.c_str());
-    pub.publish(msg);
-    osDelay(1000);
-  }
+  // auto count = 0;
+  // while (1)
+  // {
+  //   auto msg = std_msgs::msg::String();
+  //   msg.data = "Hello from mros2-posix onto Linux: " + std::to_string(count++);
+  //   printf("publishing msg: '%s'\r\n", msg.data.c_str());
+  //   pub.publish(msg);
+  //   osDelay(1000);
+  // }
 
   mros2::spin();
   return 0;

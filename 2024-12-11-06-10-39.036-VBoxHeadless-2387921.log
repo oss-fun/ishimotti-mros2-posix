@@ -1,0 +1,12 @@
+Log created: 2024-12-11T06:10:39.361852000Z
+Process ID:  2387921 (0x246fd1)
+Parent PID:  1 (0x1)
+Executable:  /usr/lib/virtualbox/VBoxHeadless
+Arg[0]: /usr/lib/virtualbox/VBoxHeadless
+Arg[1]: --comment
+Arg[2]: test-stm32_master_1732537662667_47239
+Arg[3]: --startvm
+Arg[4]: 4acb7d45-4f32-451e-8716-019eb7f7491c
+Arg[5]: --vrde
+Arg[6]: config
+AddRef: illegal refcnt=3221225469 state=2

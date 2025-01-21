@@ -64,9 +64,9 @@ int main(int argc, char *argv[])
 
   mros2::Node node = mros2::Node::create_node("mros2_node");
 
-  // 複数topicテスト
-  mros2::Publisher pub = node.create_publisher<std_msgs::msg::String>("to_linux", 10);
-  mros2::Subscriber sub = node.create_subscription<std_msgs::msg::String>("to_stm", 10, userCallback);
+  // // 複数topicテスト
+  // mros2::Publisher pub = node.create_publisher<std_msgs::msg::String>("to_linux", 10);
+  // mros2::Subscriber sub = node.create_subscription<std_msgs::msg::String>("to_stm", 10, userCallback);
 
   // add_two_intsRequestで動く形で、Subscribe実装　topic名　add_two_intsRequest
   mros2::Subscriber service = node.create_service<service_msgs::msg::add_two_int_client, std_msgs::msg::Int64>("add_two_ints", 10, service_userCallback);
@@ -86,14 +86,14 @@ int main(int argc, char *argv[])
 
   auto count = 0;
   // 10回送信
-  while (count < 10)
-  {
-    auto msg = std_msgs::msg::String();
-    msg.data = "Hello from mros2-posix onto Linux: " + std::to_string(count++);
-    printf("publishing msg: '%s'\r\n", msg.data.c_str());
-    pub.publish(msg);
-    osDelay(1000);
-  }
+  // while (count < 10)
+  // {
+  //   auto msg = std_msgs::msg::String();
+  //   msg.data = "Hello from mros2-posix onto Linux: " + std::to_string(count++);
+  //   printf("publishing msg: '%s'\r\n", msg.data.c_str());
+  //   pub.publish(msg);
+  //   osDelay(1000);
+  // }
 
   mros2::spin();
   return 0;

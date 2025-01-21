@@ -40,10 +40,10 @@ namespace rtps
 
     namespace Config
     {
-        // const VendorId_t VENDOR_ID = {13, 37};
-        const VendorId_t VENDOR_ID = {01, 15};
+        const VendorId_t VENDOR_ID = {13, 37};
+        // const VendorId_t VENDOR_ID = {01, 15};//fastdds
         const std::array<uint8_t, 4> IP_ADDRESS = {
-            192, 168, 11, 8}; // Needs to be set in lwipcfg.h too.
+            192, 168, 11, 26}; // Needs to be set in lwipcfg.h too.
         const GuidPrefix_t BASE_GUID_PREFIX{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12};
 
         const uint8_t DOMAIN_ID = 0; // 230 possible with UDP
@@ -52,13 +52,13 @@ namespace rtps
         const uint8_t NUM_STATEFUL_READERS = 8;
         const uint8_t NUM_STATEFUL_WRITERS = 8;
         const uint8_t MAX_NUM_PARTICIPANTS = 1;
-        const uint8_t NUM_WRITERS_PER_PARTICIPANT = 16;
-        const uint8_t NUM_READERS_PER_PARTICIPANT = 16;
-        const uint8_t NUM_WRITER_PROXIES_PER_READER = 6;
-        const uint8_t NUM_READER_PROXIES_PER_WRITER = 6;
+        const uint8_t NUM_WRITERS_PER_PARTICIPANT = 160;  // 関連ありそう
+        const uint8_t NUM_READERS_PER_PARTICIPANT = 160;  // 関連ありそう
+        const uint8_t NUM_WRITER_PROXIES_PER_READER = 60; // 関連ありそう
+        const uint8_t NUM_READER_PROXIES_PER_WRITER = 60; // 関連ありそう
 
-        const uint8_t MAX_NUM_UNMATCHED_REMOTE_WRITERS = 15;
-        const uint8_t MAX_NUM_UNMATCHED_REMOTE_READERS = 15;
+        const uint8_t MAX_NUM_UNMATCHED_REMOTE_WRITERS = 150; // 関連ありそう
+        const uint8_t MAX_NUM_UNMATCHED_REMOTE_READERS = 150; // 関連ありそう
 
         const uint8_t MAX_NUM_READER_CALLBACKS = 5;
 
@@ -67,8 +67,8 @@ namespace rtps
         const uint8_t HISTORY_SIZE_STATEFUL = 2;
 
         // const uint8_t MAX_TYPENAME_LENGTH = 40;
-        const uint8_t MAX_TYPENAME_LENGTH = 80;
-        const uint8_t MAX_TOPICNAME_LENGTH = 40;
+        const uint8_t MAX_TYPENAME_LENGTH = 100;
+        const uint8_t MAX_TOPICNAME_LENGTH = 80;
 
         const int HEARTBEAT_STACKSIZE = 4096;          // byte
         const int THREAD_POOL_WRITER_STACKSIZE = 4096; // byte
@@ -80,8 +80,8 @@ namespace rtps
         const uint8_t SPDP_CYCLECOUNT_HEARTBEAT =
             2; // skip x SPDP rounds before checking liveliness
         const uint8_t SPDP_WRITER_PRIO = 24;
-        const uint8_t SPDP_MAX_NUMBER_FOUND_PARTICIPANTS = 5;
-        const uint8_t SPDP_MAX_NUM_LOCATORS = 5;
+        const uint8_t SPDP_MAX_NUMBER_FOUND_PARTICIPANTS = 100; // 関連ありそう
+        const uint8_t SPDP_MAX_NUM_LOCATORS = 100;              // 関連ありそう
         const Duration_t SPDP_DEFAULT_REMOTE_LEASE_DURATION = {
             100, 0}; // Default lease duration for remote participants, usually
                      // overwritten by remote info
@@ -91,7 +91,7 @@ namespace rtps
 
         const Duration_t SPDP_LEASE_DURATION = {100, 0};
 
-        const int MAX_NUM_UDP_CONNECTIONS = 10;
+        const int MAX_NUM_UDP_CONNECTIONS = 210; // 関連ありそう
 
         const int THREAD_POOL_NUM_WRITERS = 1;
         const int THREAD_POOL_NUM_READERS = 1;

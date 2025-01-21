@@ -3,7 +3,9 @@
 
 // #define NETIF_IPADDR "192.168.11.25"
 // #define NETIF_IPADDR "192.168.50.5"
-#define NETIF_IPADDR "192.168.11.8"
+// #define NETIF_IPADDR "192.168.11.8"
+// #define NETIF_IPADDR "192.168.11.3"
+#define NETIF_IPADDR "192.168.11.26"
 #define NETIF_NETMASK "255.255.255.0"
 
 #endif /* MROS2_POSIX_NETIF_H */
