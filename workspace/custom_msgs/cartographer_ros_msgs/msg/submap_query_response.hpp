@@ -86,7 +86,7 @@ namespace cartographer_ros_msgs
 
       int32_t submap_version;
 
-      uint8_t textures;
+      // uint8_t textures;
 
       uint32_t copyToBuf(uint8_t *addrPtr)
       {
@@ -120,7 +120,20 @@ namespace cartographer_ros_msgs
         return cntPub;
       }
 
-      std::vector<uint8_t> cells;
+      // cartographer_ros_msgs/SubmapTextureの構造体を宣言
+      struct SubmapTexture
+      {
+        std::vector<uint8_t> cells;
+        int32_t width;
+        int32_t height;
+        double resolution;
+        geometry_msgs::msg::Pose slice_pose;
+      };
+
+      std::vector<SubmapTexture> textures;
+
+      std::vector<uint8_t>
+          cells;
       int32_t width;
       int32_t height;
       double resolution;
@@ -130,6 +143,7 @@ namespace cartographer_ros_msgs
       {
         uint32_t tmpSub = 0;
         uint32_t arraySize;
+        uint32_t arraySize2;
         uint32_t stringSize;
 
         tmpSub = status
@@ -151,11 +165,13 @@ namespace cartographer_ros_msgs
         cntSub += 4;
 
         // Textureの配列サイズを取得 基本的には1なのでスキップ
-        //  memcpy(&arraySize, addrPtr, 4);
+        memcpy(&arraySize2, addrPtr, 4);
         addrPtr += 4;
         cntSub += 4;
+        textures.resize(arraySize2);
+
+        //  cartographer_ros_msgs/SubmapTexture[] textures
         /*
-          cartographer_ros_msgs/SubmapTexture
           uint8[] cells
           int32 width
           int32 height
@@ -163,73 +179,135 @@ namespace cartographer_ros_msgs
           geometry_msgs/Pose slice_pose //mROSにある型
         */
 
-        // cells配列サイズを取得
-        memcpy(&arraySize, addrPtr, 4);
-        addrPtr += 4;
-        cntSub += 4;
-        // msg_size = arraySize;
-
-        cells.resize(arraySize);
-        // 具体的なデータを取得
-        for (int i = 0; i < arraySize; i++)
+        for (int size = 0; size < arraySize2; size++)
         {
-          memcpy(&(cells[i]), addrPtr, 1);
-          addrPtr += 1;
-          cntSub += 1;
+          // cells配列サイズを取得
+          memcpy(&arraySize, addrPtr, 4);
+          addrPtr += 4;
+          cntSub += 4;
+          // msg_size = arraySize;
+
+          textures[size].cells.resize(arraySize);
+          // 具体的なデータを取得
+          for (int i = 0; i < arraySize; i++)
+          {
+            memcpy(&(textures[size].cells[i]), addrPtr, 1);
+            addrPtr += 1;
+            cntSub += 1;
+          }
+
+          printf("after cells cntSub: %ld,arraySize: %ld \n", cntSub, arraySize);
+
+          if (cntSub % 4 > 0)
+          {
+            for (int i = 0; i < (4 - (cntSub % 4)); i++)
+            {
+              addrPtr += 1;
+            }
+            cntSub += 4 - (cntSub % 4);
+          }
+          printf("after cells alignment 4 cntSub: %d\n", cntSub);
+
+          // memcpy(&textures, addrPtr, 1);
+          // addrPtr += 1;
+          // cntSub += 1;
+          // int32_t width;
+          memcpy(&textures[size].width, addrPtr, 4);
+          addrPtr += 4;
+          cntSub += 4;
+          // int32_t height;
+          memcpy(&textures[size].height, addrPtr, 4);
+          addrPtr += 4;
+          cntSub += 4;
+
+          /*_Float64 resolution;*/
+
+          // 8byte alignment
+          if (cntSub % 8 > 0)
+          {
+            for (int i = 0; i < (8 - (cntSub % 8)); i++)
+            {
+              addrPtr += 1;
+            }
+            cntSub += 8 - (cntSub % 8);
+          }
+
+          memcpy(&textures[size].resolution, addrPtr, 8);
+          addrPtr += 8;
+          cntSub += 8;
+          // geometry_msgs::msg::Pose slice_pose;
+          tmpSub = textures[size].slice_pose.copyFromBuf(addrPtr);
+          cntSub += tmpSub;
+          addrPtr += tmpSub;
         }
 
-        // アライメント
-        // if (cntSub % 2 > 0)
+        // // cells配列サイズを取得
+        // memcpy(&arraySize, addrPtr, 4);
+        // addrPtr += 4;
+        // cntSub += 4;
+        // // msg_size = arraySize;
+
+        // cells.resize(arraySize);
+        // // 具体的なデータを取得
+        // for (int i = 0; i < arraySize; i++)
         // {
-        //   for (int i = 0; i < (2 - (cntSub % 2)); i++)
+        //   memcpy(&(cells[i]), addrPtr, 1);
+        //   addrPtr += 1;
+        //   cntSub += 1;
+        // }
+
+        // // アライメント
+        // // if (cntSub % 2 > 0)
+        // // {
+        // //   for (int i = 0; i < (2 - (cntSub % 2)); i++)
+        // //   {
+        // //     addrPtr += 1;
+        // //   }
+        // //   cntSub += 2 - (cntSub % 2);
+        // // }
+        // printf("after cells cntSub: %ld,arraySize: %ld \n", cntSub, arraySize);
+
+        // if (cntSub % 4 > 0)
+        // {
+        //   for (int i = 0; i < (4 - (cntSub % 4)); i++)
         //   {
         //     addrPtr += 1;
         //   }
-        //   cntSub += 2 - (cntSub % 2);
+        //   cntSub += 4 - (cntSub % 4);
         // }
-        printf("after cells cntSub: %ld,arraySize: %ld \n", cntSub, arraySize);
+        // printf("after cells alignment 4 cntSub: %d\n", cntSub);
 
-        if (cntSub % 4 > 0)
-        {
-          for (int i = 0; i < (4 - (cntSub % 4)); i++)
-          {
-            addrPtr += 1;
-          }
-          cntSub += 4 - (cntSub % 4);
-        }
-        printf("after cells alignment 4 cntSub: %d\n", cntSub);
+        // // memcpy(&textures, addrPtr, 1);
+        // // addrPtr += 1;
+        // // cntSub += 1;
+        // // int32_t width;
+        // memcpy(&width, addrPtr, 4);
+        // addrPtr += 4;
+        // cntSub += 4;
+        // // int32_t height;
+        // memcpy(&height, addrPtr, 4);
+        // addrPtr += 4;
+        // cntSub += 4;
 
-        // memcpy(&textures, addrPtr, 1);
-        // addrPtr += 1;
-        // cntSub += 1;
-        // int32_t width;
-        memcpy(&width, addrPtr, 4);
-        addrPtr += 4;
-        cntSub += 4;
-        // int32_t height;
-        memcpy(&height, addrPtr, 4);
-        addrPtr += 4;
-        cntSub += 4;
+        // /*_Float64 resolution;*/
 
-        /*_Float64 resolution;*/
+        // // 8byte alignment
+        // if (cntSub % 8 > 0)
+        // {
+        //   for (int i = 0; i < (8 - (cntSub % 8)); i++)
+        //   {
+        //     addrPtr += 1;
+        //   }
+        //   cntSub += 8 - (cntSub % 8);
+        // }
 
-        // 8byte alignment
-        if (cntSub % 8 > 0)
-        {
-          for (int i = 0; i < (8 - (cntSub % 8)); i++)
-          {
-            addrPtr += 1;
-          }
-          cntSub += 8 - (cntSub % 8);
-        }
-
-        memcpy(&resolution, addrPtr, 8);
-        addrPtr += 8;
-        cntSub += 8;
-        // geometry_msgs::msg::Pose slice_pose;
-        tmpSub = slice_pose.copyFromBuf(addrPtr);
-        cntSub += tmpSub;
-        addrPtr += tmpSub;
+        // memcpy(&resolution, addrPtr, 8);
+        // addrPtr += 8;
+        // cntSub += 8;
+        // // geometry_msgs::msg::Pose slice_pose;
+        // tmpSub = slice_pose.copyFromBuf(addrPtr);
+        // cntSub += tmpSub;
+        // addrPtr += tmpSub;
 
         return cntSub;
       }

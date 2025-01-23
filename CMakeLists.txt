@@ -47,10 +47,19 @@ set(CMAKE_OS_POSIX true)
 add_subdirectory(mros2)
 
 # Application combines (CMSIS LWIP EmbeddedRTPS mROS2)
-include(workspace/${MROS2_APPNAME}/Filelists.cmake) 
+include(workspace/${MROS2_APPNAME}/Filelists.cmake)
 add_executable(mros2-posix
   ${apl_SRCS}
 )
+
+# for occupancy_grid_node
+find_package(Boost REQUIRED COMPONENTS iostreams)
+find_package(Ceres REQUIRED COMPONENTS SuiteSparse)
+find_package(Eigen3 REQUIRED)
+find_package(Lua REQUIRED)
+# find_package(cairo REQUIRED)
+find_package(cartographer REQUIRED)
+
 
 target_include_directories(
   mros2-posix
@@ -75,6 +84,9 @@ target_include_directories(
   # app
   PRIVATE ${PROJECT_SOURCE_DIR}/workspace/${MROS2_APPNAME}
   PRIVATE ${PROJECT_SOURCE_DIR}/workspace/custom_msgs
+
+  # # cartographer
+  # /opt/ros/humble/include
 )
 
-target_link_libraries(mros2-posix mros2 lwip cmsis pthread)
+target_link_libraries(mros2-posix mros2 lwip cmsis pthread cartographer)
