@@ -94,12 +94,12 @@ std::unique_ptr<::cartographer::io::SubmapTextures> FetchSubmapTextures(
   msg_req.trajectory_id = submap_id.trajectory_id;
   msg_req.submap_index = submap_id.submap_index;
   // msg->submap[i].trajectory_id;
-  printf("service publishing msg: [submap_id] trajectory_id: '%d' + submap_index: '%d'\r\n", submap_id.trajectory_id, submap_id.submap_index);
+  printf("service client msg: [submap_id] trajectory_id: '%d' + submap_index: '%d'\r\n", submap_id.trajectory_id, submap_id.submap_index);
 
   auto response = client.async_send_request(msg_req);
   // // osDelay(1000);
   printf("future.get() start\r\n");
-  mros2::spin_until_future_complete(node, &response);
+  mros2::spin_until_future_complete(node, &response); // タイムアウトを設定できるようにする？
   printf("future.get() end\r\n");
 
   cartographer_ros_msgs::msg::SubmapQuery_Response msg_test;
@@ -114,19 +114,19 @@ std::unique_ptr<::cartographer::io::SubmapTextures> FetchSubmapTextures(
   }
 
   /*値の確認する*/
-  // status.code
-  printf("future subscribed msg_test: status:'%d'\r\n", msg_test.status.code);
-  // printf("future subscribed msg_test: status:'%s'\r\n", cartographer_ros_msgs::msg::StatusCode::OK);
-  printf("future subscribed msg_test: status:'%s'\r\n", msg_test.status.message.c_str());
-  // 配列要素分表示
-  printf("future subscribed msg_test: cells[%d]:[\r\n", msg_test.textures[0].cells.size());
-  printf("future subscribed msg_test texture[%d]: %d\r\n", msg_test.textures.size());
-  int size = msg_test.textures[0].cells.size();
-  for (int i = 0; i < size; i++)
-  {
-    printf("%d,", msg_test.textures[0].cells[i]);
-  }
-  printf("]\r\n");
+  // // status.code
+  // printf("future subscribed msg_test: status:'%d'\r\n", msg_test.status.code);
+  // // printf("future subscribed msg_test: status:'%s'\r\n", cartographer_ros_msgs::msg::StatusCode::OK);
+  // printf("future subscribed msg_test: status:'%s'\r\n", msg_test.status.message.c_str());
+  // // 配列要素分表示
+  // printf("future subscribed msg_test: cells[%d]:[\r\n", msg_test.textures[0].cells.size());
+  // printf("future subscribed msg_test texture[%d]: %d\r\n", msg_test.textures.size());
+  // int size = msg_test.textures[0].cells.size();
+  // for (int i = 0; i < size; i++)
+  // {
+  //   printf("%d,", msg_test.textures[0].cells[i]);
+  // }
+  // printf("]\r\n");
 
   /*FetchSubmapTextures*/
   auto response_msg = absl::make_unique<::cartographer::io::SubmapTextures>();
@@ -197,6 +197,51 @@ std::unique_ptr<nav_msgs::msg::OccupancyGrid> CreateOccupancyGridMsg(
   return occupancy_grid;
 }
 
+void DrawAndPublish()
+{
+  absl::MutexLock locker(&mutex_);
+  if (submap_slices_.empty() || last_frame_id_.empty())
+  {
+    printf("submap_slices_.empty() || last_frame_id_.empty()\n");
+    return;
+  }
+
+  auto painted_slices = PaintSubmapSlices(submap_slices_, resolution_);
+  std::unique_ptr<nav_msgs::msg::OccupancyGrid> msg_ptr =
+      CreateOccupancyGridMsg(painted_slices, resolution_, last_frame_id_,
+                             last_timestamp_);
+
+  // for width height data
+  printf("*** msg_ptr->data[%d]: [", msg_ptr->data.size());
+  // for (int i = 0; i < msg_ptr->data.size(); i++)
+  // {
+  //   printf("%d,", msg_ptr->data[i]);
+  // }
+  printf("] ***\n");
+
+  printf("[DrawAndPublish]publishing msg: 'data.size: %d'\r\n", msg_ptr->data.size());
+  // msg_ptr->info.width,msg_ptr->info.height,msg_prt->info.resolutionの表示
+  printf("[DrawAndPublish]publishing msg: 'info.width: %d height: %d resolution: %lf'\r\n", msg_ptr->info.width, msg_ptr->info.height, msg_ptr->info.resolution);
+  //  pub.publish(*msg_ptr);
+
+  // 書き出しの日付をつけてdataをファイルに書き出したい
+  FILE *fp;
+  fp = fopen("/vm_share/occupancy_grid_node_data/mROS2-data.txt", "w");
+  // msg_ptr->info.width,msg_ptr->info.height,msg_prt->info.resolutionの書き出し
+  fprintf(fp, "%d\n", msg_ptr->info.width);
+  fprintf(fp, "%d\n", msg_ptr->info.height);
+  fprintf(fp, "%lf\n", msg_ptr->info.resolution);
+  fprintf(fp, "%d\n", msg_ptr->info.map_load_time);
+  for (int i = 0; i < msg_ptr->data.size(); i++)
+  {
+
+    fprintf(fp, "%d,", msg_ptr->data[i]);
+  }
+  fprintf(fp, "\n");
+  fclose(fp);
+  printf("\n");
+}
+
 int main(int argc, char *argv[])
 {
   netif_posix_add(NETIF_IPADDR, NETIF_NETMASK);
@@ -223,7 +268,7 @@ int main(int argc, char *argv[])
       -> void
   {
     // osDelay(10);
-    // absl::MutexLock locker(&mutex_);
+    absl::MutexLock locker(&mutex_);
 
     // We do not do any work if nobody listens.
     // if (this->count_publishers(kSubmapListTopic) == 0) {
@@ -265,78 +310,20 @@ int main(int argc, char *argv[])
       submap_slice.pose = ToRigid3d(submap_msg.pose);
       submap_slice.metadata_version = submap_msg.submap_version;
       // 既にあるマップはスキップ
-      if (submap_slice.surface != nullptr &&
-          submap_slice.version == submap_msg.submap_version)
-      {
-        continue;
-      }
-
-      /*FetchSubmapTextures*/
-      // msg初期化
-      auto msg_req = service_msgs::msg::SubmapQuery_client();
-      // auto msg_req = std::make_shared<::service_msgs::msg::SubmapQuery_client>();
-
-      msg_req.trajectory_id = submap_msg.trajectory_id;
-      msg_req.submap_index = submap_msg.submap_index;
-      // msg->submap[i].trajectory_id;
-      printf("service publishing msg: [msg->submap[roop_count]] trajectory_id: '%d' + submap_index: '%d'\r\n", msg->submap[roop_count].trajectory_id, msg->submap[roop_count].submap_index);
-      printf("service publishing msg: [submap_msg] trajectory_id: '%d' + submap_index: '%d'\r\n", submap_msg.trajectory_id, submap_msg.submap_index);
-      printf("service publishing msg: [msg_req] trajectory_id: '%d' + submap_index: '%d'\r\n", msg_req.trajectory_id, msg_req.submap_index);
-      printf("service publishing msg: [msg_req] submap_version: '%d'\r\n", submap_msg.submap_version);
-
-      auto response = client.async_send_request(msg_req);
-      // // osDelay(1000);
-      printf("future.get() start\r\n");
-      mros2::spin_until_future_complete(node, &response);
-      printf("future.get() end\r\n");
-
-      cartographer_ros_msgs::msg::SubmapQuery_Response msg_test;
-
-      msg_test.copyFromBuf(&response.get()[4]);
-
-      // check status
-      if (msg_test.status.code != 0 ||
-          msg_test.textures.empty())
-      {
-        // return nullptr;
-        return;
-      }
-
-      /*値の確認する*/
-      // status.code
-      printf("future subscribed msg_test: status:'%d'\r\n", msg_test.status.code);
-      // printf("future subscribed msg_test: status:'%s'\r\n", cartographer_ros_msgs::msg::StatusCode::OK);
-      printf("future subscribed msg_test: status:'%s'\r\n", msg_test.status.message.c_str());
-      // 配列要素分表示
-      printf("future subscribed msg_test: cells[%d]:[\r\n", msg_test.textures[0].cells.size());
-      printf("future subscribed msg_test texture[%d]: %d\r\n", msg_test.textures.size());
-      int size = msg_test.textures[0].cells.size();
-      // for (int i = 0; i < size; i++)
+      // if (submap_slice.surface != nullptr &&
+      //     submap_slice.version == submap_msg.submap_version)
       // {
-      //   printf("%d,", msg_test.textures[0].cells[i]);
+      //   continue;
       // }
-      // printf("]\r\n");
 
       /*FetchSubmapTextures*/
-      auto response_msg = absl::make_unique<::cartographer::io::SubmapTextures>();
-      response_msg->version = msg_test.submap_version;
-      for (const auto &texture : msg_test.textures)
-      {
-        const std::string compressed_cells(texture.cells.begin(),
-                                           texture.cells.end());
-        response_msg->textures.emplace_back(::cartographer::io::SubmapTexture{
-            ::cartographer::io::UnpackTextureData(compressed_cells, texture.width,
-                                                  texture.height),
-            texture.width, texture.height, texture.resolution,
-            ToRigid3d(texture.slice_pose)});
-      }
-
-      auto fetched_textures = std::move(response_msg);
-      // fetched_texture==msg_test==response_msg;
-      /*FetchSubmapTextures*/
+      auto fetched_textures = FetchSubmapTextures(
+          id, client, node,
+          std::chrono::milliseconds(int(publish_period_sec * 1000)));
 
       if (fetched_textures == nullptr)
       {
+        printf("----- fetched_textures == nullptr exit handlesunmaplist() -----\n");
         return;
       }
       // CHECK(!fetched_textures->textures.empty());
@@ -378,22 +365,13 @@ int main(int argc, char *argv[])
     }
     last_timestamp_ = msg->nanosec; // msg->header.stamp;
     last_frame_id_ = msg->frame_id; // msg->header.frame_id;
-
-    // pose Rigid3d
-    // cartographer::transform::Rigid3({0, 0, 0}, Eigen::Quaterniond(0, 0, 0, 0));
   };
-
-  // submap_slice_test.poseの表示
-  // printf("submap_slice_test.pose: %lf\n", submap_slice_test.pose.translation().x());
-
-  // submap_slice_test.pose = ToRigid3d(submap_msg.pose);
-  // submap_slice_test.metadata_version = submap_msg.submap_version;
 
   // mros2::Subscriber sub = node.create_subscription<cartographer_ros_msgs::msg::SubmapList>("submap_list", 10, userCallback);
   mros2::wait_service(1); // ertps内で照合をmrosgawani
   mros2::Subscriber sub = node.create_subscription<cartographer_ros_msgs::msg::SubmapList>("submap_list", 10, handleSubmapListWrapper);
 
-  osDelay(10000);
+  // osDelay(10000);
 
   /*データが入ってるかテスト*/
   const SubmapId id_test{0, 0};
@@ -403,44 +381,12 @@ int main(int argc, char *argv[])
   // submap_sline_test.width, submap_sline_test.height
   printf("[Testing-mainfunc]submap_slice_test.width: %d height: %d\n", submap_slice_test.width, submap_slice_test.height);
 
-  for (int i = 0; i < 1000; i++)
+  for (int i = 0; i < 2000; i++)
   {
-    /*DrawAndPublish*/
-    if (submap_slices_.empty() || last_frame_id_.empty())
-    {
-      printf("submap_slices_.empty() || last_frame_id_.empty()\n");
-      // return;
-    }
-
-    auto painted_slices = PaintSubmapSlices(submap_slices_, resolution_);
-    std::unique_ptr<nav_msgs::msg::OccupancyGrid> msg_ptr =
-        CreateOccupancyGridMsg(painted_slices, resolution_, last_frame_id_,
-                               last_timestamp_);
-
-    // for width height data
-    printf("msg_ptr->data[%d]: [", msg_ptr->data.size());
-    // for (int i = 0; i < msg_ptr->data.size(); i++)
-    // {
-    //   printf("%d,", msg_ptr->data[i]);
-    // }
-    // printf("]\n");
-
-    printf("[DrawAndPublish]publishing msg: 'data.size: %d'\r\n", msg_ptr->data.size());
-    // pub.publish(*msg_ptr);
+    printf("roop_count: %d\n", i);
+    DrawAndPublish();
     osDelay(1000);
   }
-
-  // occupancy_grid_publisher_->publish(*msg_ptr);
-
-  // auto count = 0;
-  // while (1)
-  // {
-  //   auto msg = std_msgs::msg::String();
-  //   msg.data = "Hello from mros2-posix onto Linux: " + std::to_string(count++);
-  //   printf("publishing msg: '%s'\r\n", msg.data.c_str());
-  //   pub.publish(msg);
-  //   osDelay(1000);
-  // }
 
   mros2::spin();
   return 0;

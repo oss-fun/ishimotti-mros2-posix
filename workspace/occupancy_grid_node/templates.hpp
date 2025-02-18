@@ -8,8 +8,5 @@
 template mros2::Publisher mros2::Node::create_publisher<nav_msgs::msg::OccupancyGrid>(std::string topic_name, int qos);
 template void mros2::Publisher::publish(nav_msgs::msg::OccupancyGrid &msg);
 
-// template mros2::Subscriber mros2::Node::create_subscription(std::string topic_name, int qos, void (*fp)(std_msgs::msg::UInt8MultiArray *));
-// template void mros2::Subscriber::callback_handler<std_msgs::msg::UInt8MultiArray>(void *callee, const rtps::ReaderCacheChange &cacheChange);
-
 template mros2::Subscriber mros2::Node::create_subscription(std::string topic_name, int qos, void (*fp)(cartographer_ros_msgs::msg::SubmapList *));
 template void mros2::Subscriber::callback_handler<cartographer_ros_msgs::msg::SubmapList>(void *callee, const rtps::ReaderCacheChange &cacheChange);

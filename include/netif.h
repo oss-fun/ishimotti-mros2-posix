@@ -4,8 +4,12 @@
 // #define NETIF_IPADDR "192.168.11.25"
 // #define NETIF_IPADDR "192.168.50.5"
 // #define NETIF_IPADDR "192.168.11.8"
-// #define NETIF_IPADDR "192.168.11.3"
+// #define NETIF_IPADDR "192.168.11.3" // homeß
+// #define NETIF_IPADDR "192.168.10.11"
+// #define NETIF_IPADDR "10.124.57.53" // freewifi
+
 #define NETIF_IPADDR "192.168.11.26"
 #define NETIF_NETMASK "255.255.255.0"
+// #define NETIF_NETMASK "255.255.252.0"
 
 #endif /* MROS2_POSIX_NETIF_H */
