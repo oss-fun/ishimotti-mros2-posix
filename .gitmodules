@@ -1,6 +1,7 @@
 [submodule "mros2"]
   path = mros2
-  url = https://github.com/mROS-base/mros2.git
+  url = https://github.com/oss-fun/mros2.git
+  branch = service-communication
 [submodule "lwip-posix"]
   path = lwip-posix
   url = https://github.com/mROS-base/lwip-posix.git
